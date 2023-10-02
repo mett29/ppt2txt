@@ -19,7 +19,7 @@ parsed_ppt_dict = ppt2txt.parse_ppt("file.ppt")
 
 ```json
 {
-    "filename": "file_example_PPT_250kB_v2.ppt",
+    "filename": "file.ppt",
     "slides": 4,
     "content": {
         "0": "Text from the first record",
