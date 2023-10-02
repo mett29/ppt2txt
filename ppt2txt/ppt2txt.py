@@ -41,13 +41,14 @@ def process_args():
     return args
 
 
-def hexdump(src, length=16):
+def hexdump(src, length=16) -> str:
     """
     Returns a hexadecimal dump of a binary string
     (adapted from https://github.com/decalage2/oletools/blob/master/oletools/ezhexviewer.py)
 
     Args:
-      :param length: number of bytes per row.
+        :param src: stream source
+        :param length: number of bytes per row
     """
     hex_data = ''
     for i in range(0, len(src), length):
@@ -57,48 +58,65 @@ def hexdump(src, length=16):
 
 
 def parse_ppt(path: str) -> dict:
-    parsed_ppt_dict = {}
+    """
+    Extract textual content from binary .ppt
 
-    ole = olefile.OleFileIO(path)
-    meta = ole.get_metadata()
-    parsed_ppt_dict["filename"] = path
-    parsed_ppt_dict["slides"] = meta.slides
-    parsed_ppt_dict["content"] = {}
-    stream = ole.openstream('PowerPoint Document').getvalue()
+    Args:
+        :param path: path to the PPT
+    """
 
-    hex_data = hexdump(stream)
+    # Check if path exists
+    if not os.path.exists(path):
+        print(f"File {path} does not exist")
+        return {}
 
-    matches = list(re.finditer(TEXT_HEADER_ATOM, hex_data))
-    matches_spans = [match.span() for match in matches]
+    try:
+        parsed_ppt_dict = {}
 
-    text_counter = 0
-    for j in range(len(matches_spans)):
-        start_index = int(matches_spans[j][1])
-    
-        # Check if there is a TextBytesAtom
-        is_text_bytes_atom = hex_data[start_index+20:start_index+24] == TEXT_BYTES_ATOM
-        if not is_text_bytes_atom:
-            continue
+        ole = olefile.OleFileIO(path)
+        meta = ole.get_metadata()
+        parsed_ppt_dict["filename"] = path
+        parsed_ppt_dict["slides"] = meta.slides
+        parsed_ppt_dict["content"] = {}
+        stream = ole.openstream('PowerPoint Document').getvalue()
 
-        start_index += 8
-        # text_type = hex_data[start_index:start_index+2]
+        hex_data = hexdump(stream)
 
-        start_index += 16
-        # Get the bytes indicating the length of the text
-        rec_len_bytes = hex_data[start_index:start_index+8]
-        rec_len_bytes_couples = list(zip(rec_len_bytes[0::2], rec_len_bytes[1::2]))
-        rec_len_bytes = "".join(["".join(couple) for couple in rec_len_bytes_couples[::-1]])
-        # Convert from hex to decimal value
-        text_length = int(rec_len_bytes, 16)
-        text_start_index = start_index + 8
-        hex_text = hex_data[text_start_index:text_start_index+text_length*2]
-        byte_string = bytes.fromhex(hex_text)            
-        result = byte_string.decode(ENCODING, errors="ignore")
+        matches = list(re.finditer(TEXT_HEADER_ATOM, hex_data))
+        matches_spans = [match.span() for match in matches]
 
-        parsed_ppt_dict["content"][str(text_counter)] = result
-        text_counter += 1
-    
-    return parsed_ppt_dict
+        text_counter = 0
+        for j in range(len(matches_spans)):
+            start_index = int(matches_spans[j][1])
+        
+            # Check if there is a TextBytesAtom
+            is_text_bytes_atom = hex_data[start_index+20:start_index+24] == TEXT_BYTES_ATOM
+            if not is_text_bytes_atom:
+                continue
+
+            start_index += 8
+            # text_type = hex_data[start_index:start_index+2]
+
+            start_index += 16
+            # Get the bytes indicating the length of the text
+            rec_len_bytes = hex_data[start_index:start_index+8]
+            rec_len_bytes_couples = list(zip(rec_len_bytes[0::2], rec_len_bytes[1::2]))
+            rec_len_bytes = "".join(["".join(couple) for couple in rec_len_bytes_couples[::-1]])
+            # Convert from hex to decimal value
+            text_length = int(rec_len_bytes, 16)
+            text_start_index = start_index + 8
+            hex_text = hex_data[text_start_index:text_start_index+text_length*2]
+            byte_string = bytes.fromhex(hex_text)            
+            result = byte_string.decode(ENCODING, errors="ignore")
+
+            parsed_ppt_dict["content"][str(text_counter)] = result
+            text_counter += 1
+        
+        return parsed_ppt_dict
+
+    except Exception as ex:
+        print(f"Something went wrong: {type(ex).__name__}")
+        return {}
 
 
 
