@@ -57,7 +57,7 @@ def hexdump(src, length=16) -> str:
     return hex_data
 
 
-def parse_ppt(path: str) -> dict:
+def process(path: str) -> dict:
     """
     Extract textual content from binary .ppt
 
@@ -122,7 +122,7 @@ def parse_ppt(path: str) -> dict:
 
 if __name__ == "__main__":
     args = process_args()
-    parsed_ppt_dict = parse_ppt(args.ppt)
+    parsed_ppt_dict = process(args.ppt)
     os.makedirs(args.output_dir, exist_ok=True)
     with open(os.path.join(args.output_dir, 'parsed_ppt.json'), 'w', encoding='utf-8') as f_out:
         json.dump(parsed_ppt_dict, f_out, indent=4, ensure_ascii=False)
