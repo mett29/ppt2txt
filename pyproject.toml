@@ -27,4 +27,4 @@ dependencies = [
 ppt2txt = "ppt2txt.__main__:main"
 
 [project.urls]
-Homepage = "https://github.com/mett29/ppt2txt"
+repository = "https://github.com/mett29/ppt2txt"
